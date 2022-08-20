@@ -1,22 +1,36 @@
 from arango import ArangoClient
+from model import Todo
 
 client = ArangoClient(hosts='http://212.80.212.197:18529')
 
 db = client.db('ORTODB', username='ortodbadmin', password='0rt0DB@m1n')
 
 if db.has_collection('todo'):
-    collection = db.collection('todo')
+    todos = db.collection('todo')
 else:
-    collection = db.create_collection('todo')
+    todos = db.create_collection('todo')
 
 
-async def fetch_all_todos():
-    todos = []
-    cursor = collection.find({})
-    async for document in cursor:
-        todos.append(Todo(**document))
-    return todos
 
-async def fetch_one_todo(title):
-    document = await collection.find_one({"title":title})
-    return document
+def fetch_all_todos():
+    todoList = []
+    for todo in todos:
+        todoList.append(Todo(**todo))
+    return todoList
+
+def fetch_one_todo(title):
+    for todo in todos.find({'title':title}):
+        return todo
+
+def create_todo(todo):
+    result = todos.insert(todo)
+    return todos.get(result['_key'])
+
+def update_todo(title, desc):
+    todos.update_match({'title': title}, {'description': desc})
+    for doc in todos.find({'title':title}):
+        return doc
+
+def remove_todo(title):
+    todos.delete_match({'title':title})
+    return True

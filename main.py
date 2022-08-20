@@ -1,9 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-from database import fetch_all_todos
+from database import create_todo, fetch_all_todos, fetch_one_todo, update_todo, remove_todo
+
+from model import Todo
 
 
 origins = ['https://localhost:3000']
@@ -21,6 +23,34 @@ def read_root():
     return {"Ping":"Pong"}
 
 @app.get("/api/todo")
-async def get_todo():
-    response = await fetch_all_todos()
+def get_todo():
+    response = fetch_all_todos()
     return response 
+
+@app.get("/api/todo{title}", response_model=Todo)
+def get_todo_by_title(title):
+    response = fetch_one_todo(title)
+    if response:
+        return response
+    raise HTTPException(404, f"there is no TODO item with this title {title}")
+
+@app.post("/api/todo", response_model=Todo)
+def post_todo(todo:Todo):
+    response = create_todo(todo.dict())
+    if response:
+        return response
+    raise HTTPException(400, "Something went wrong/Bad request")
+
+@app.put("/api/todo{title}", response_model=Todo)
+def put_todo(title:str, desc:str):
+    response = update_todo(title, desc)
+    if response:
+        return response
+    raise HTTPException(404, f"there is no TODO item with this title {title}")
+
+@app.delete("/api/toto{title}")
+def delete_todo(title):
+    response = remove_todo(title)
+    if response:
+        return "Succesfully deleted todo item!"
+    raise HTTPException(404, f"there is no TODO item with this title {title}")
